@@ -1,0 +1,27 @@
+name: verify
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv run --locked ruff check .
+      - run: uv run --locked pytest -q
+      - run: uv build
+      - run: uv run --locked python scripts/verify_skill.py
+      - run: uv run --locked python scripts/build_skill.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screen-bridge-distributions
+          path: dist/*

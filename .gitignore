@@ -1,5 +1,6 @@
 # Local screen state, captures and logs
 /runtime/
+/runtime-*/
 /data/
 /captures/
 /screenshots/
@@ -26,6 +27,8 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .ruff_cache/
+.unlazy/
+@AutomationLog.txt
 node_modules/
 
 # Build and editor output
