@@ -1,0 +1,38 @@
+# Local screen state, captures and logs
+/runtime/
+/data/
+/captures/
+/screenshots/
+/artifacts/
+/logs/
+*.log
+
+# Browser automation output and profiles
+.playwright/
+.playwright-cli/
+/browser-profile/
+auth.json
+storage-state*.json
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Python / Node environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+node_modules/
+
+# Build and editor output
+build/
+dist/
+*.egg-info/
+.idea/
+.vscode/
+Thumbs.db
+Desktop.ini
