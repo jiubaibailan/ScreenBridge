@@ -8,7 +8,7 @@ import logging
 import threading
 import time
 import uuid
-from collections import OrderedDict
+from collections import OrderedDict, deque
 from pathlib import Path
 
 from PIL import ImageChops
@@ -61,6 +61,11 @@ class ScreenService:
         self._last_heartbeat = 0.0
         self._descriptions = self.store.load_descriptions()
         self._issued_regions = OrderedDict()
+        self._events = deque(maxlen=128)
+        self._subscribed_task = None
+        self._task_auto = False
+        self._task_stopped = False
+        self._event_sequence = 0
 
     def start(self) -> None:
         if self._thread is not None:
@@ -184,6 +189,7 @@ class ScreenService:
             "fingerprint": fingerprint,
             "elements": elements,
             "regions": regions,
+            "components": self._components(elements, regions),
             "warnings": warnings,
             "ocr_mode": self.ocr,
             "dirty_bbox": dirty.as_list(),
@@ -199,8 +205,121 @@ class ScreenService:
             self._frame, self._state, self._ocr_items = frame, state, ocr_items
             self._error = None
             self._last_heartbeat = time.monotonic()
+            self._event_sequence += 1
+            self._events.append(
+                {
+                    "sequence": self._event_sequence,
+                    "event": "state_changed",
+                    "task": self._subscribed_task,
+                    "snapshot_id": state["snapshot_id"],
+                    "captured_at": state["captured_at"],
+                    "components": copy.deepcopy(state["components"]),
+                }
+            )
             self._condition.notify_all()
             return copy.deepcopy(state)
+
+    @staticmethod
+    def _components(elements: list[dict], regions: list[dict]) -> list[dict]:
+        components = []
+        for item in elements:
+            role = item.get("role", "text")
+            kind = {"edit": "input", "button": "button", "image": "image"}.get(role, "text")
+            bbox = Box.parse(item["bbox"])
+            components.append(
+                {
+                    "id": item["id"],
+                    "type": kind,
+                    "text": item.get("text", ""),
+                    "bbox": item["bbox"],
+                    "center": list(bbox.center()),
+                    "confidence": item.get(
+                        "confidence", 1.0 if item.get("source") == "uia" else None
+                    ),
+                    "source": item.get("source", "unknown"),
+                    "visible": True,
+                    "enabled": item.get("enabled", True),
+                }
+            )
+        for item in regions:
+            bbox = Box.parse(item["bbox"])
+            components.append(
+                {
+                    "id": item["id"],
+                    "type": "image",
+                    "text": item.get("name", ""),
+                    "bbox": item["bbox"],
+                    "center": list(bbox.center()),
+                    "confidence": item.get("confidence"),
+                    "source": item.get("source", "visual"),
+                    "visible": True,
+                    "enabled": False,
+                }
+            )
+        return components
+
+    def subscribe_task(self, task: str, auto_execute: bool = False) -> dict:
+        if not task or len(task) > 120:
+            raise BridgeError("INVALID_ARGUMENT", "task must contain 1..120 characters")
+        with self._condition:
+            self._subscribed_task = task
+            self._task_auto = bool(auto_execute)
+            self._task_stopped = False
+            self._events.clear()
+            current = copy.deepcopy(self._state)
+            return {
+                "status": "subscribed",
+                "task": task,
+                "auto_execute": self._task_auto,
+                "snapshot_id": current["snapshot_id"] if current else None,
+            }
+
+    def wait_for_event(self, after_sequence: int | None = None, timeout_ms: int = 10000) -> dict:
+        if not 0 <= timeout_ms <= 30000:
+            raise BridgeError("INVALID_ARGUMENT", "timeout_ms must be between 0 and 30000")
+        deadline = time.monotonic() + timeout_ms / 1000
+        with self._condition:
+            while True:
+                for event in self._events:
+                    if after_sequence is None or event["sequence"] > after_sequence:
+                        return copy.deepcopy(event)
+                if self._task_stopped:
+                    return {"event": "task_stopped", "task": self._subscribed_task}
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    return {"event": "timeout", "task": self._subscribed_task}
+                self._condition.wait(remaining)
+
+    def get_current_state(self) -> dict:
+        state = self.get_screen()
+        return {
+            "snapshot_id": state["snapshot_id"],
+            "task": self._subscribed_task,
+            "components": copy.deepcopy(state.get("components", [])),
+            "window": copy.deepcopy(state["window"]),
+            "observed_at": state["observed_at"],
+        }
+
+    def stop_task(self) -> dict:
+        with self._condition:
+            self._task_stopped = True
+            self._condition.notify_all()
+            return {"status": "stopped", "task": self._subscribed_task}
+
+    def verify_action(self, snapshot_id: str, expected_component: str | None = None) -> dict:
+        state = self.get_screen(wait_for_change_from=snapshot_id, timeout_ms=3000)
+        if not state.get("changed"):
+            return {"verified": False, "reason": "state did not change", "snapshot_id": snapshot_id}
+        if expected_component:
+            found = any(
+                item["id"] == expected_component for item in state.get("components", [])
+            )
+            return {
+                "verified": found,
+                "snapshot_id": state["snapshot_id"],
+                "component_present": found,
+            }
+        return {"verified": True, "snapshot_id": state["snapshot_id"]}
 
     def _enrich_region(self, region: dict, frame: Frame) -> None:
         box = Box.parse(region["bbox"])

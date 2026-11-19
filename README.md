@@ -108,7 +108,17 @@ startup_timeout_sec = 30
 tool_timeout_sec = 45
 ```
 
-提供 `get_screen`、`find_text`、`get_region_image`、`describe_region`、`click`、`type_text`、`press_key`、`scroll` 八个工具。MCP 与 skill 后台不能同时占用一个输出目录。
+提供基础的 `get_screen`、`find_text`、`get_region_image`、`describe_region`、`click`、`type_text`、`press_key`、`scroll` 工具，以及实时任务工具。MCP 与 skill 后台不能同时占用一个输出目录。
+
+### 实时任务与通用组件
+
+MCP 还提供实时任务工具。Codex 可以先调用 `subscribe_task`，然后使用 `wait_for_event` 等待屏幕状态变化。事件只保留最新的一小段队列，避免 Agent 处理过期画面。使用 `get_current_state` 可以获得通用组件，每个组件包含 `id`、`type`、`text`、`bbox`、`center`、`confidence`、`source`、`visible` 和 `enabled`。
+
+可用工具包括 `subscribe_task`、`wait_for_event`、`get_current_state`、`get_region_image`、`describe_region`、`act`、`verify_action` 和 `stop_task`。推荐的交互顺序是订阅任务、等待事件、读取状态、执行带 `snapshot_id` 的操作、验证状态变化。`auto_execute` 默认关闭，只有已经验证过的任务才应开启自动操作。
+
+视觉识别采用本地分层方案。优先使用 Windows UI Automation，其次使用本地 OCR、OpenCV 模板匹配和轮廓检测。复杂分割模型可以通过后续视觉适配器接入，当前接口为 CPU 运行保留了扩展点，也不要求上传屏幕内容到云端。
+
+简单任务可以使用 JSON 策略配置，复杂任务可以实现 Python 适配器。策略和适配器共享同一个组件、事件和操作接口。打地鼠示例位于 `tools/whack_mole.py`，可用来验证目标识别、事件等待、点击和结果确认。
 
 ## 开发与验证
 

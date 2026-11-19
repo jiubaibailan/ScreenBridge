@@ -15,6 +15,12 @@ description: 在 Windows 上持续读取当前前台窗口的文字、坐标和�
 4. 每次操作后重新读取状态并确认结果。工具返回 `sent` 只代表已发出输入。出现 `STALE_SNAPSHOT` 时重新读取并重新定位，不能沿用旧坐标；连续三次仍无法获得稳定画面时说明当前动画/窗口变化的阻碍，不反复盲点。
 5. 完成当前读屏或操作任务后运行 `python scripts/run.py stop`，结束采集。只有用户要求持续采集时才保持运行。
 
+## 实时任务
+
+MCP 客户端可以调用 `subscribe_task` 订阅任务，再用 `wait_for_event` 等待状态变化。收到事件后调用 `get_current_state` 获取通用组件，再使用 `act` 执行带 `snapshot_id` 的操作，并用 `verify_action` 确认结果。调用 `stop_task` 会唤醒等待中的调用并停止当前任务订阅。
+
+组件类型包括 `button`、`text`、`input` 和 `image`，组件提供 `id`、`bbox`、`center`、`confidence`、`source`、`visible` 和 `enabled`。`auto_execute` 默认关闭，只有经过验证的任务才开启。图片区域仍需通过 `get_region_image` 查看，不能把候选区域直接当作已识别对象。
+
 ```powershell
 python scripts/run.py click --snapshot SNAPSHOT_ID --element ELEMENT_ID
 python scripts/run.py click --snapshot SNAPSHOT_ID --x 640 --y 400

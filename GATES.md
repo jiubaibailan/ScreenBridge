@@ -28,3 +28,19 @@ Scope: self-contained installable skill with Windows screen state, OCR, image an
   CHECK: uv run --locked python scripts/verify_skill.py
   EXPECT: SKILL_PACKAGE_OK
   EVIDENCE: automatic-evidence=v1; definition-sha256=58328684f297b38f5a17d678b25944cb1b3772bc8d4b0d8e3448438fcccd45d9; exit=0; EXPECT=matched; output-sha256=ee374a0ef9e3e5ef0e5445ca58d90c5794b50932742d70289dc12ee42d5f88b8; output-bytes=18; shell=C:\WINDOWS\system32\cmd.exe; cwd=C:\Users\ruanjing123\OneDrive\文档\RJ_projections\ai自动读取屏幕中间层; path=463280a33470/41 entries
+
+- [ ] G6: event queue and wait_for_event deliver ordered state changes and stop cleanly
+  CHECK: uv run --locked pytest -q tests/test_events.py
+  EXPECT: /^\d+ passed(?:, \d+ warnings?)? in /m
+
+- [ ] G7: generic visual components and task adapters expose the documented contracts
+  CHECK: uv run --locked pytest -q tests/test_components.py
+  EXPECT: /^\d+ passed(?:, \d+ warnings?)? in /m
+
+- [ ] G8: MCP exposes real-time task tools and preserves existing tools
+  CHECK: uv run --locked pytest -q tests/test_mcp_tools.py
+  EXPECT: /^\d+ passed(?:, \d+ warnings?)? in /m
+
+- [ ] G9: all sources and documentation pass final validation
+  CHECK: uv run --locked ruff check .
+  EXPECT: /^All checks passed!/m

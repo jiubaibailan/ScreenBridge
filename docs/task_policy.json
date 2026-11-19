@@ -1,0 +1,9 @@
+{
+  "name": "whack_mole",
+  "auto_execute": false,
+  "min_confidence": 0.75,
+  "allowed_actions": ["click"],
+  "metadata": {
+    "description": "Example policy. Turn on auto_execute only after validating the task."
+  }
+}

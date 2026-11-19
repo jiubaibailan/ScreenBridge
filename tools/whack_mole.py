@@ -32,7 +32,9 @@ class WhackMole:
             button.grid(row=index // 4, column=index % 4, padx=5, pady=5, ipady=10)
             self.buttons.append(button)
 
-        ttk.Label(root, text="每秒刷新一次。请在鼹鼠消失前点击正确洞位。", foreground="#555").pack(pady=14)
+        ttk.Label(
+            root, text="点击命中后才刷新下一只鼹鼠。", foreground="#555"
+        ).pack(pady=14)
         self.next_round()
 
     def next_round(self) -> None:
@@ -41,7 +43,11 @@ class WhackMole:
         self.round_no += 1
         self.mole = random.randrange(16)
         for index, button in enumerate(self.buttons):
-            text = f"洞位 {index + 1}\n[ 🐹 ]" if index == self.mole else f"洞位 {index + 1}\n[ 空 ]"
+            text = (
+                f"洞位 {index + 1}\n[ 🐹 ]"
+                if index == self.mole
+                else f"洞位 {index + 1}\n[ 空 ]"
+            )
             button.configure(text=text)
         self.score_label.configure(text=f"得分：{self.score}    回合：{self.round_no}")
 

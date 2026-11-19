@@ -9,12 +9,22 @@ import subprocess
 import sys
 import threading
 import time
+from typing import Protocol
 
 import numpy as np
 from PIL import Image, ImageChops
 
 from screen_bridge.desktop import Frame
 from screen_bridge.models import Box, element
+
+
+class VisualSegmenter(Protocol):
+    """Optional local segmenter contract for SAM 2, Grounding DINO or YOLO adapters."""
+
+    name: str
+
+    def detect(self, image: Image.Image, origin: Box, elements: list[dict]) -> list[dict]:
+        """Return image-like regions in physical desktop coordinates."""
 
 
 class AccessibilityReader:

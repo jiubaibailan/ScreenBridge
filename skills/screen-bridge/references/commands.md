@@ -47,4 +47,6 @@ Coordinates are physical virtual-desktop pixels, including negative monitor orig
 
 ## Optional MCP
 
-The same eight tools are exposed through `mcp` over standard input/output. A client can start the bundled environment's Python with `-m screen_bridge mcp --output ABSOLUTE_PATH`. This starts its own collector; it does not attach to an existing skill service. The skill CLI requires no MCP configuration.
+The basic tools and real-time task tools are exposed through `mcp` over standard input/output. A client can start the bundled environment's Python with `-m screen_bridge mcp --output ABSOLUTE_PATH`. This starts its own collector; it does not attach to an existing skill service. The skill CLI requires no MCP configuration.
+
+Real-time tools are `subscribe_task`, `wait_for_event`, `get_current_state`, `act`, `verify_action`, and `stop_task`. The recommended sequence is subscribe, wait, read state, act with the returned `snapshot_id`, and verify the next state. `auto_execute` is opt-in.
