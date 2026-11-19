@@ -44,12 +44,12 @@ class WhackMole:
             text = f"洞位 {index + 1}\n[ 🐹 ]" if index == self.mole else f"洞位 {index + 1}\n[ 空 ]"
             button.configure(text=text)
         self.score_label.configure(text=f"得分：{self.score}    回合：{self.round_no}")
-        self.root.after(1000, self.next_round)
 
     def whack(self, index: int) -> None:
         if index == self.mole:
             self.score += 1
             self.status.configure(text="命中！继续寻找下一个鼹鼠。")
+            self.next_round()
         else:
             self.status.configure(text="没打中，再观察当前网格。")
         self.score_label.configure(text=f"得分：{self.score}    回合：{self.round_no}")
